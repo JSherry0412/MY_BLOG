@@ -7,6 +7,7 @@ const root = __dirname;
 const port = 4173;
 const origin = `http://127.0.0.1:${port}`;
 const dataPath = path.join(root, 'blog-data.js');
+if (!fs.existsSync(dataPath)) fs.copyFileSync(path.join(root, 'blog-data.example.js'), dataPath, fs.constants.COPYFILE_EXCL);
 const initialContext = {window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root, 'config.js'), 'utf8'), initialContext, {timeout:1000});
 const initial = JSON.parse(JSON.stringify(initialContext.window.BLOG));
@@ -25,6 +26,8 @@ function fullData() {
   const data = readData();
   if (!Array.isArray(data.posts)) data.posts = initial.posts;
   if (!Array.isArray(data.moments)) data.moments = initial.moments;
+  if (!Array.isArray(data.projects)) data.projects = initial.projects;
+  data.settings = {...Object.fromEntries(['title','description','about','interests','timeline','github'].map(key => [key,initial[key]])), ...(data.settings || {})};
   return data;
 }
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -52,6 +55,7 @@ http.createServer((req,res) => {
           const avatar = payload.avatar || '';
           if (typeof avatar !== 'string' || avatar.length > 1400000 || (avatar && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(avatar))) throw new Error('头像格式无效或图片过大');
           data.profile = {name:text(payload.name,80),signature:text(payload.signature,300),tags:list(payload.tags),avatar};
+          if (typeof payload.title === 'string' && typeof payload.description === 'string') { data.settings ||= {}; data.settings.title = text(payload.title,120); data.settings.description = text(payload.description,500); }
         } else if (payload.kind === 'post') {
           if (!Array.isArray(data.posts)) data.posts = initial.posts;
           const slug = text(payload.slug,80); if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('文章标识只能包含小写字母、数字和连字符');
@@ -66,6 +70,24 @@ http.createServer((req,res) => {
           const index = Number(payload.index); if (!Number.isInteger(index) || index < -1 || index >= data.moments.length) throw new Error('动态不存在');
           const old = index < 0 ? null : data.moments[index]; const next = {date:old?.date || today(),text:content,tags:list(payload.tags)};
           if (JSON.stringify(next) !== JSON.stringify(old)) { if (index < 0) data.moments.unshift(next); else data.moments[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
+        } else if (payload.kind === 'home') {
+          data.settings ||= {};
+          data.settings.title = text(payload.title,120);
+          data.settings.description = text(payload.description,500);
+        } else if (payload.kind === 'about') {
+          data.settings ||= {};
+          data.settings.about = text(payload.about,5000);
+          const github = text(payload.github,1000); if (github && !/^https?:\/\//i.test(github)) throw new Error('链接须以 http:// 或 https:// 开头'); data.settings.github = github;
+          data.settings.interests = list(payload.interests);
+          if (!Array.isArray(payload.timeline) || payload.timeline.length > 50) throw new Error('经历格式无效');
+          data.settings.timeline = payload.timeline.map(row => ({date:text(row.date,80),title:text(row.title,150),text:text(row.text,1000)}));
+        } else if (payload.kind === 'project') {
+          if (!Array.isArray(data.projects)) data.projects = initial.projects;
+          const index = Number(payload.index); if (!Number.isInteger(index) || index < -1 || index >= data.projects.length) throw new Error('项目不存在');
+          const title = text(payload.title,150), url = text(payload.url,1000); if (!title) throw new Error('请填写项目名称');
+          if (url && !/^https?:\/\//i.test(url)) throw new Error('链接须以 http:// 或 https:// 开头');
+          const next = {title,description:text(payload.description,1000),category:text(payload.category,40) || '收藏',url};
+          if (index < 0) data.projects.unshift(next); else data.projects[index] = next;
         } else throw new Error('未知的保存类型');
         writeData(data); reply(res,200,{ok:true});
       } catch(error) { reply(res,400,{error:error.message}); } });

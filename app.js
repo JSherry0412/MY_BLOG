@@ -3,6 +3,8 @@
   const data = window.BLOG_DATA || {profile:{},activity:{}};
   if (Array.isArray(data.posts)) config.posts = data.posts;
   if (Array.isArray(data.moments)) config.moments = data.moments;
+  if (Array.isArray(data.projects)) config.projects = data.projects;
+  for (const key of ['title','description','about','interests','timeline','github']) if (data.settings && Object.hasOwn(data.settings,key)) config[key] = data.settings[key];
   const app = document.querySelector('#app');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = value => /^(https?:\/\/|mailto:)/i.test(value || '') ? esc(value) : '';
@@ -30,7 +32,7 @@
     return `<section class="contribution-panel glass"><div class="contribution-header"><div><div class="eyebrow"><span></span> BLOG ACTIVITY</div><h2>博客贡献度</h2><p>记录每一次内容的发布与更新</p></div><span class="active-days">${active} 个活跃日</span></div><div class="contribution-scroll"><div class="contribution-inner"><div class="contribution-months">${labels.join('')}</div><div class="contribution-grid">${days.join('')}</div></div></div><div class="contribution-legend"><span>少</span>${[0,1,2,3,4].map(n => `<i class="contribution-day level-${n}"></i>`).join('')}<span>多</span></div></section>`;
   }
   function home() {
-    app.innerHTML = `${profileCard()}${contributionPanel()}<section class="hero glass"><div class="hero-content"><div class="eyebrow"><span></span> A LITTLE SPACE OF MY OWN</div><h1>${esc(config.title)}<br><em>与每一个日常</em><span class="hero-star">✳</span></h1><p>${esc(config.description)}<br>欢迎来到我的小小世界。</p><div class="hero-actions"><a class="button primary" href="#posts">探索文章 <span>↗</span></a><a class="button secondary" href="#about">认识我 <span>→</span></a></div></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-sun">✳</div><span class="art-label">COLLECTING<br>SMALL MOMENTS</span><span class="art-sparkle">✦</span></div><div class="hero-index">01 / A PLACE TO BEGIN</div></section><section class="posts-section">${heading('THE LATEST STORIES','最近的记录','一些想法，一些故事，<br>都在这里慢慢生长。')}<div class="post-grid">${cards(config.posts.slice(0, 3))}</div><a class="all-posts" href="#posts">查看全部文章 <span>↗</span></a></section><section class="explore-grid"><a class="explore-card glass" href="#moments"><span>✳</span><div><small>SMALL MOMENTS</small><h3>生活动态</h3><p>收藏日常里的点滴心情</p></div><b>↗</b></a><a class="explore-card glass" href="#projects"><span>✺</span><div><small>MY COLLECTION</small><h3>项目与收藏</h3><p>一些有趣的发现和作品</p></div><b>↗</b></a></section><section class="note glass"><div class="note-icon">✺</div><div><div class="eyebrow"><span></span> A NOTE FROM ME</div><h2>感谢你来到这里。</h2><p>希望这些文字，能为你的日常带来一点灵感与温暖。</p></div><a href="#about" aria-label="了解更多关于我">↗</a></section>`;
+    app.innerHTML = `<div class="home-intro">${profileCard()}<div class="home-caption"><div class="eyebrow"><span></span> A LITTLE SPACE OF MY OWN</div><h1>${esc(config.title)}</h1><p>${esc(config.description)}</p><a class="button primary" href="#posts">探索文章 <span>↗</span></a></div></div><section class="posts-section">${heading('THE LATEST STORIES','最近的记录','一些想法，一些故事，<br>都在这里慢慢生长。')}<div class="post-grid">${cards(config.posts.slice(0, 3))}</div><a class="all-posts" href="#posts">查看全部文章 <span>↗</span></a></section><section class="explore-grid"><a class="explore-card glass" href="#moments"><span>✳</span><div><small>SMALL MOMENTS</small><h3>生活动态</h3><p>收藏日常里的点滴心情</p></div><b>↗</b></a><a class="explore-card glass" href="#projects"><span>✺</span><div><small>MY COLLECTION</small><h3>项目与收藏</h3><p>一些有趣的发现和作品</p></div><b>↗</b></a></section>${contributionPanel()}`;
   }
   function postsPage() {
     const categories = [...new Set(config.posts.map(p => p.category).filter(Boolean))];
@@ -102,6 +104,23 @@
       app.querySelector('.article-neighbors').innerHTML = neighbors.map((p,i) => p ? `<a href="#post/${encodeURIComponent(p.slug)}"><small>${i ? '下一篇 →' : '← 上一篇'}</small><strong>${esc(p.title)}</strong></a>` : '<span></span>').join('');
     } catch { const body = app.querySelector('.article-body'); if (body && location.hash === `#post/${encodeURIComponent(slug)}`) body.textContent = '文章加载失败。请通过本地服务器打开网站，并检查文章文件是否存在。'; }
   }
-  function render() { const route = location.hash.slice(1) || 'home'; const section = route.startsWith('post/') ? 'posts' : route; document.querySelectorAll('[data-nav]').forEach(a => { const active = a.dataset.nav === section; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); if (route === 'home') home(); else if (route === 'posts') postsPage(); else if (route === 'moments') momentsPage(); else if (route === 'projects') projectsPage(); else if (route === 'about') about(); else if (route.startsWith('post/')) { try { postPage(decodeURIComponent(route.slice(5))); } catch { postsPage(); } } else home(); window.scrollTo(0,0); }
-  document.querySelector('#year').textContent = new Date().getFullYear(); window.addEventListener('hashchange',render); render();
+  function render() { const route = location.hash.slice(1) || 'home'; const section = route.startsWith('post/') ? 'posts' : route; document.querySelectorAll('[data-nav]').forEach(a => { const active = a.dataset.nav === section; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); if (route === 'home') home(); else if (route === 'posts') postsPage(); else if (route === 'moments') momentsPage(); else if (route === 'projects') projectsPage(); else if (route === 'about') about(); else if (route.startsWith('post/')) { try { postPage(decodeURIComponent(route.slice(5))); } catch { postsPage(); } } else home(); addEditButton(section, route); window.scrollTo(0,0); }
+  function addEditButton(section, route) {
+    if (location.hostname !== '127.0.0.1' || location.port !== '4173') return;
+    const panel = ({home:'profile',posts:'posts',moments:'moments',projects:'projects',about:'about'})[section];
+    if (!panel) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'page-edit'; button.textContent = '✎ 编辑此页';
+    button.addEventListener('click', () => {
+      const dialog = document.createElement('dialog'); dialog.className = 'edit-dialog';
+      const close = document.createElement('button'); close.className = 'dialog-close'; close.type = 'button'; close.textContent = '关闭 ×';
+      const frame = document.createElement('iframe'); frame.title = '编辑此页面';
+      const slug = route.startsWith('post/') ? `&slug=${encodeURIComponent(decodeURIComponent(route.slice(5)))}` : '';
+      frame.src = `/editor?panel=${panel}${slug}&embedded=1`;
+      close.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('close', () => { dialog.remove(); location.reload(); });
+      dialog.append(close, frame); document.body.append(dialog); dialog.showModal();
+    });
+    app.prepend(button);
+  }
+  document.querySelector('#year').textContent = new Date().getFullYear(); document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY'; const githubLink = document.querySelector('.github'); githubLink.href = safeUrl(config.github) || '#about'; window.addEventListener('hashchange',render); render();
 })();
