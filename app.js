@@ -1,5 +1,8 @@
 (() => {
   const config = window.BLOG;
+  const data = window.BLOG_DATA || {profile:{},activity:{}};
+  if (Array.isArray(data.posts)) config.posts = data.posts;
+  if (Array.isArray(data.moments)) config.moments = data.moments;
   const app = document.querySelector('#app');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = value => /^(https?:\/\/|mailto:)/i.test(value || '') ? esc(value) : '';
@@ -7,8 +10,27 @@
   const tags = post => post.tags || [];
   const cards = posts => posts.map((post, i) => `<a class="post-card glass" href="#post/${encodeURIComponent(post.slug)}"><div class="card-number">${String(i + 1).padStart(2,'0')} <span>↗</span></div><div class="post-meta"><span class="category">${esc(post.category)}</span><span>${date(post.date)}</span></div><h3>${esc(post.title)}</h3><p>${esc(post.excerpt)}</p><div class="card-tags">${tags(post).map(t => `<span># ${esc(t)}</span>`).join('')}</div><div class="card-bottom"><span>${esc(post.reading)}</span><span class="read-link">阅读文章 <b>→</b></span></div></a>`).join('');
   const heading = (eyebrow, title, description) => `<div class="section-heading"><div><div class="eyebrow"><span></span>${eyebrow}</div><h2>${title}</h2></div><p>${description}</p></div>`;
+  function profileCard() {
+    const profile = data.profile || {};
+    const avatar = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(profile.avatar || '') ? `<img src="${esc(profile.avatar)}" alt="个人头像">` : '<span aria-hidden="true">✳</span>';
+    return `<section class="profile-panel glass"><div class="profile-avatar">${avatar}</div><div class="profile-copy"><div class="eyebrow"><span></span> MY PROFILE</div><h2>${esc(profile.name || '你的名字')}</h2><p>${esc(profile.signature || '个性签名，留给以后的自己。')}</p><div class="profile-tags">${(profile.tags || []).map(t => `<span>${esc(t)}</span>`).join('') || '<span class="tag-empty">你的标签</span>'}</div></div></section>`;
+  }
+  function contributionPanel() {
+    const activity = data.activity || {};
+    const now = new Date(); const end = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const start = new Date(end); start.setDate(end.getDate() - 364 - end.getDay());
+    const days = []; const labels = []; let previousMonth = -1;
+    for (let cursor = new Date(start), index = 0; cursor <= end; cursor.setDate(cursor.getDate()+1), index++) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+      const count = Math.max(0,Number(activity[key]) || 0); const level = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 6 ? 3 : 4;
+      days.push(`<span class="contribution-day level-${level}" title="${key}：${count} 次博客内容发布或更新" aria-label="${key}：${count} 次博客内容发布或更新"></span>`);
+      if (cursor.getMonth() !== previousMonth) { labels.push(`<span style="grid-column:${Math.floor(index/7)+1}">${cursor.getMonth()+1}月</span>`); previousMonth = cursor.getMonth(); }
+    }
+    const active = Object.entries(activity).filter(([key,count]) => key >= `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}` && key <= `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}` && Number(count)>0).length;
+    return `<section class="contribution-panel glass"><div class="contribution-header"><div><div class="eyebrow"><span></span> BLOG ACTIVITY</div><h2>博客贡献度</h2><p>记录每一次内容的发布与更新</p></div><span class="active-days">${active} 个活跃日</span></div><div class="contribution-scroll"><div class="contribution-inner"><div class="contribution-months">${labels.join('')}</div><div class="contribution-grid">${days.join('')}</div></div></div><div class="contribution-legend"><span>少</span>${[0,1,2,3,4].map(n => `<i class="contribution-day level-${n}"></i>`).join('')}<span>多</span></div></section>`;
+  }
   function home() {
-    app.innerHTML = `<section class="hero glass"><div class="hero-content"><div class="eyebrow"><span></span> A LITTLE SPACE OF MY OWN</div><h1>${esc(config.title)}<br><em>与每一个日常</em><span class="hero-star">✳</span></h1><p>${esc(config.description)}<br>欢迎来到我的小小世界。</p><div class="hero-actions"><a class="button primary" href="#posts">探索文章 <span>↗</span></a><a class="button secondary" href="#about">认识我 <span>→</span></a></div></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-sun">✳</div><span class="art-label">COLLECTING<br>SMALL MOMENTS</span><span class="art-sparkle">✦</span></div><div class="hero-index">01 / A PLACE TO BEGIN</div></section><section class="posts-section">${heading('THE LATEST STORIES','最近的记录','一些想法，一些故事，<br>都在这里慢慢生长。')}<div class="post-grid">${cards(config.posts.slice(0, 3))}</div><a class="all-posts" href="#posts">查看全部文章 <span>↗</span></a></section><section class="explore-grid"><a class="explore-card glass" href="#moments"><span>✳</span><div><small>SMALL MOMENTS</small><h3>生活动态</h3><p>收藏日常里的点滴心情</p></div><b>↗</b></a><a class="explore-card glass" href="#projects"><span>✺</span><div><small>MY COLLECTION</small><h3>项目与收藏</h3><p>一些有趣的发现和作品</p></div><b>↗</b></a></section><section class="note glass"><div class="note-icon">✺</div><div><div class="eyebrow"><span></span> A NOTE FROM ME</div><h2>感谢你来到这里。</h2><p>希望这些文字，能为你的日常带来一点灵感与温暖。</p></div><a href="#about" aria-label="了解更多关于我">↗</a></section>`;
+    app.innerHTML = `${profileCard()}${contributionPanel()}<section class="hero glass"><div class="hero-content"><div class="eyebrow"><span></span> A LITTLE SPACE OF MY OWN</div><h1>${esc(config.title)}<br><em>与每一个日常</em><span class="hero-star">✳</span></h1><p>${esc(config.description)}<br>欢迎来到我的小小世界。</p><div class="hero-actions"><a class="button primary" href="#posts">探索文章 <span>↗</span></a><a class="button secondary" href="#about">认识我 <span>→</span></a></div></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-sun">✳</div><span class="art-label">COLLECTING<br>SMALL MOMENTS</span><span class="art-sparkle">✦</span></div><div class="hero-index">01 / A PLACE TO BEGIN</div></section><section class="posts-section">${heading('THE LATEST STORIES','最近的记录','一些想法，一些故事，<br>都在这里慢慢生长。')}<div class="post-grid">${cards(config.posts.slice(0, 3))}</div><a class="all-posts" href="#posts">查看全部文章 <span>↗</span></a></section><section class="explore-grid"><a class="explore-card glass" href="#moments"><span>✳</span><div><small>SMALL MOMENTS</small><h3>生活动态</h3><p>收藏日常里的点滴心情</p></div><b>↗</b></a><a class="explore-card glass" href="#projects"><span>✺</span><div><small>MY COLLECTION</small><h3>项目与收藏</h3><p>一些有趣的发现和作品</p></div><b>↗</b></a></section><section class="note glass"><div class="note-icon">✺</div><div><div class="eyebrow"><span></span> A NOTE FROM ME</div><h2>感谢你来到这里。</h2><p>希望这些文字，能为你的日常带来一点灵感与温暖。</p></div><a href="#about" aria-label="了解更多关于我">↗</a></section>`;
   }
   function postsPage() {
     const categories = [...new Set(config.posts.map(p => p.category).filter(Boolean))];
@@ -71,7 +93,7 @@
     if (!post) { app.innerHTML = `<section class="inner-page glass message"><h1>文章没有找到</h1><a href="#posts">← 返回文章列表</a></section>`; return; }
     app.innerHTML = `<section class="inner-page glass article"><a class="back" href="#posts">← 返回文章列表</a><div class="post-meta"><span class="category">${esc(post.category)}</span><span>${date(post.date)}</span><span>${esc(post.reading)}</span></div><div class="card-tags">${tags(post).map(t => `<span># ${esc(t)}</span>`).join('')}</div><div class="article-layout"><div class="article-body">正在加载文章…</div><aside class="article-toc" hidden></aside></div><div class="article-neighbors"></div><div class="comments-placeholder"><span>✧</span><div><h3>留言</h3><p>留言功能预留中，接入服务后即可在这里交流。</p></div></div></section>`;
     try {
-      const res = await fetch(post.file); if (!res.ok) throw new Error('无法读取文章'); const content = await res.text();
+      let content = post.body; if (typeof content !== 'string') { const res = await fetch(post.file); if (!res.ok) throw new Error('无法读取文章'); content = await res.text(); }
       if (location.hash !== `#post/${encodeURIComponent(slug)}`) return;
       const rendered = markdown(content); app.querySelector('.article-body').innerHTML = rendered.html;
       const toc = app.querySelector('.article-toc'); const entries = rendered.headings.filter(h => h.level > 1);

@@ -1,0 +1,80 @@
+// 仅在本机运行的博客编辑器；无需第三方依赖。
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const root = __dirname;
+const port = 4173;
+const origin = `http://127.0.0.1:${port}`;
+const dataPath = path.join(root, 'blog-data.js');
+const initialContext = {window:{}};
+vm.runInNewContext(fs.readFileSync(path.join(root, 'config.js'), 'utf8'), initialContext, {timeout:1000});
+const initial = JSON.parse(JSON.stringify(initialContext.window.BLOG));
+function readData() {
+  const content = fs.readFileSync(dataPath,'utf8');
+  const match = content.match(/^window\.BLOG_DATA\s*=\s*([\s\S]*);\s*$/);
+  if (!match) throw new Error('数据文件格式无效，请检查 blog-data.js');
+  return JSON.parse(match[1]);
+}
+function writeData(data) {
+  const temp = dataPath + '.tmp';
+  fs.writeFileSync(temp, `window.BLOG_DATA = ${JSON.stringify(data, null, 2)};\n`, 'utf8');
+  fs.renameSync(temp, dataPath);
+}
+function fullData() {
+  const data = readData();
+  if (!Array.isArray(data.posts)) data.posts = initial.posts;
+  if (!Array.isArray(data.moments)) data.moments = initial.moments;
+  return data;
+}
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function text(value, max = 5000) { if (typeof value !== 'string' || value.length > max) throw new Error('输入内容无效或过长'); return value.trim(); }
+function list(value) { if (!Array.isArray(value) || value.length > 30) throw new Error('标签格式无效'); return value.map(v => text(v, 40)).filter(Boolean); }
+function postBody(post) {
+  if (typeof post.body === 'string') return post.body;
+  if (!/^posts\/[a-zA-Z0-9_-]+\.md$/.test(post.file || '')) throw new Error('文章路径无效');
+  return fs.readFileSync(path.join(root,post.file),'utf8');
+}
+function reply(res, status, body, type = 'application/json; charset=utf-8') { res.writeHead(status, {'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); res.end(typeof body === 'string' ? body : JSON.stringify(body)); }
+const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js','/config.js':'config.js','/blog-data.js':'blog-data.js','/editor':'editor.html','/editor.html':'editor.html','/editor.js':'editor.js','/editor.css':'editor.css'};
+http.createServer((req,res) => {
+  try {
+    const pathname = new URL(req.url,origin).pathname;
+    if (req.method === 'GET' && pathname === '/api/data') { const data = fullData(); data.posts = data.posts.map(p => ({...p,body:postBody(p)})); return reply(res,200,data); }
+    if (req.method === 'POST' && pathname === '/api/save') {
+      if (req.headers.origin !== origin || req.headers['x-blog-editor'] !== '1' || !String(req.headers['content-type']).startsWith('application/json')) return reply(res,403,{error:'请求来源无效'});
+      let body = ''; req.setEncoding('utf8');
+      req.on('data',chunk => { body += chunk; if (body.length > 1600000) req.destroy(); });
+      req.on('end',() => { try {
+        const payload = JSON.parse(body), data = readData();
+        data.activity ||= {};
+        if (payload.kind === 'profile') {
+          const avatar = payload.avatar || '';
+          if (typeof avatar !== 'string' || avatar.length > 1400000 || (avatar && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(avatar))) throw new Error('头像格式无效或图片过大');
+          data.profile = {name:text(payload.name,80),signature:text(payload.signature,300),tags:list(payload.tags),avatar};
+        } else if (payload.kind === 'post') {
+          if (!Array.isArray(data.posts)) data.posts = initial.posts;
+          const slug = text(payload.slug,80); if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('文章标识只能包含小写字母、数字和连字符');
+          const title = text(payload.title,150), content = text(payload.body,200000); if (!title || !content) throw new Error('请填写标题和文章内容');
+          const index = data.posts.findIndex(p => p.slug === slug), old = data.posts[index];
+          const next = {slug,title,date:old?.date || today(),category:text(payload.category,40) || '随笔',tags:list(payload.tags),excerpt:text(payload.excerpt,300),reading:old?.reading || '阅读文章',body:content};
+          const comparable = old && {slug:old.slug,title:old.title,date:old.date,category:old.category,tags:old.tags || [],excerpt:old.excerpt,reading:old.reading || '阅读文章',body:postBody(old).trim()};
+          if (JSON.stringify(next) !== JSON.stringify(comparable)) { if (index < 0) data.posts.unshift(next); else data.posts[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
+        } else if (payload.kind === 'moment') {
+          if (!Array.isArray(data.moments)) data.moments = initial.moments;
+          const content = text(payload.text,5000); if (!content) throw new Error('请填写动态内容');
+          const index = Number(payload.index); if (!Number.isInteger(index) || index < -1 || index >= data.moments.length) throw new Error('动态不存在');
+          const old = index < 0 ? null : data.moments[index]; const next = {date:old?.date || today(),text:content,tags:list(payload.tags)};
+          if (JSON.stringify(next) !== JSON.stringify(old)) { if (index < 0) data.moments.unshift(next); else data.moments[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
+        } else throw new Error('未知的保存类型');
+        writeData(data); reply(res,200,{ok:true});
+      } catch(error) { reply(res,400,{error:error.message}); } });
+      return;
+    }
+    if (req.method !== 'GET') return reply(res,405,'Method not allowed','text/plain; charset=utf-8');
+    let file = files[pathname]; if (!file && /^\/posts\/[a-zA-Z0-9_-]+\.md$/.test(pathname)) file = pathname.slice(1);
+    if (!file) return reply(res,404,'Not found','text/plain; charset=utf-8');
+    const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8'};
+    reply(res,200,fs.readFileSync(path.join(root,file),'utf8'),types[ext] || 'text/plain; charset=utf-8');
+  } catch(error) { reply(res,500,{error:error.message}); }
+}).listen(port,'127.0.0.1',() => console.log(`博客编辑器：${origin}/editor\n博客预览：${origin}/`));
