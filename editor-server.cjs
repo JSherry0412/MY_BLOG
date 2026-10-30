@@ -38,8 +38,8 @@ function postBody(post) {
   if (!/^posts\/[a-zA-Z0-9_-]+\.md$/.test(post.file || '')) throw new Error('文章路径无效');
   return fs.readFileSync(path.join(root,post.file),'utf8');
 }
-function reply(res, status, body, type = 'application/json; charset=utf-8') { res.writeHead(status, {'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); res.end(typeof body === 'string' ? body : JSON.stringify(body)); }
-const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js','/config.js':'config.js','/blog-data.js':'blog-data.js','/editor':'editor.html','/editor.html':'editor.html','/editor.js':'editor.js','/editor.css':'editor.css'};
+function reply(res, status, body, type = 'application/json; charset=utf-8') { res.writeHead(status, {'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)); }
+const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/home.css':'home.css','/app.js':'app.js','/config.js':'config.js','/blog-data.js':'blog-data.js','/editor':'editor.html','/editor.html':'editor.html','/editor.js':'editor.js','/editor.css':'editor.css','/assets/wallpaper.png':'assets/wallpaper.png','/personal/character.png':'personal/character.png','/personal/character-mask.png':'personal/character-mask.png'};
 http.createServer((req,res) => {
   try {
     const pathname = new URL(req.url,origin).pathname;
@@ -47,7 +47,7 @@ http.createServer((req,res) => {
     if (req.method === 'POST' && pathname === '/api/save') {
       if (req.headers.origin !== origin || req.headers['x-blog-editor'] !== '1' || !String(req.headers['content-type']).startsWith('application/json')) return reply(res,403,{error:'请求来源无效'});
       let body = ''; req.setEncoding('utf8');
-      req.on('data',chunk => { body += chunk; if (body.length > 1600000) req.destroy(); });
+      req.on('data',chunk => { body += chunk; if (body.length > 8000000) req.destroy(); });
       req.on('end',() => { try {
         const payload = JSON.parse(body), data = readData();
         data.activity ||= {};
@@ -56,6 +56,8 @@ http.createServer((req,res) => {
           if (typeof avatar !== 'string' || avatar.length > 1400000 || (avatar && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(avatar))) throw new Error('头像格式无效或图片过大');
           data.profile = {name:text(payload.name,80),signature:text(payload.signature,300),tags:list(payload.tags),avatar};
           if (typeof payload.title === 'string' && typeof payload.description === 'string') { data.settings ||= {}; data.settings.title = text(payload.title,120); data.settings.description = text(payload.description,500); }
+          if (typeof payload.coverQuote === 'string' && typeof payload.coverAuthor === 'string') { data.settings ||= {}; data.settings.coverQuote = text(payload.coverQuote,120); data.settings.coverAuthor = text(payload.coverAuthor,120); }
+          if (typeof payload.coverWallpaper === 'string') { const wall = payload.coverWallpaper; if (wall.length > 4200000 || (wall && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(wall))) throw new Error('壁纸格式无效或图片过大'); data.settings ||= {}; data.settings.coverWallpaper = wall; }
         } else if (payload.kind === 'post') {
           if (!Array.isArray(data.posts)) data.posts = initial.posts;
           const slug = text(payload.slug,80); if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('文章标识只能包含小写字母、数字和连字符');
@@ -96,7 +98,8 @@ http.createServer((req,res) => {
     if (req.method !== 'GET') return reply(res,405,'Method not allowed','text/plain; charset=utf-8');
     let file = files[pathname]; if (!file && /^\/posts\/[a-zA-Z0-9_-]+\.md$/.test(pathname)) file = pathname.slice(1);
     if (!file) return reply(res,404,'Not found','text/plain; charset=utf-8');
-    const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8'};
-    reply(res,200,fs.readFileSync(path.join(root,file),'utf8'),types[ext] || 'text/plain; charset=utf-8');
+    const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8','.png':'image/png'};
+    if (!fs.existsSync(path.join(root,file))) return reply(res,404,'Not found','text/plain; charset=utf-8');
+    reply(res,200,ext === '.png' ? fs.readFileSync(path.join(root,file)) : fs.readFileSync(path.join(root,file),'utf8'),types[ext] || 'text/plain; charset=utf-8');
   } catch(error) { reply(res,500,{error:error.message}); }
 }).listen(port,'127.0.0.1',() => console.log(`博客编辑器：${origin}/editor\n博客预览：${origin}/`));

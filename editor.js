@@ -1,7 +1,7 @@
 (() => {
   const byId = id => document.getElementById(id);
   const profile = byId('profile-form'), posts = byId('post-form'), moments = byId('moment-form'), projects = byId('project-form'), about = byId('about-form');
-  const notice = byId('notice'); let data, avatar = '';
+  const notice = byId('notice'); let data, avatar = '', coverWallpaper = '';
   const params = new URLSearchParams(location.search);
   if (params.get('embedded') === '1') document.body.classList.add('embedded');
   const message = (text,error=false) => { notice.textContent = text; notice.classList.toggle('error',error); };
@@ -24,6 +24,7 @@
     const p = data.profile || {}, settings = data.settings || {};
     profile.elements.name.value = p.name || ''; profile.elements.signature.value = p.signature || ''; profile.elements.tags.value = (p.tags || []).join(', '); avatar = p.avatar || ''; preview();
     profile.elements.title.value = settings.title || ''; profile.elements.description.value = settings.description || '';
+    profile.elements.coverQuote.value = settings.coverQuote || ''; profile.elements.coverAuthor.value = settings.coverAuthor || ''; coverWallpaper = settings.coverWallpaper || '';
     about.elements.about.value = settings.about || ''; about.elements.github.value = settings.github || ''; about.elements.interests.value = (settings.interests || []).join(', ');
     about.elements.timeline.value = (settings.timeline || []).map(x => `${x.date} | ${x.title} | ${x.text}`).join('\n'); refreshLists();
   }
@@ -32,7 +33,9 @@
   document.querySelector('.editor-nav').addEventListener('click', e => { const button = e.target.closest('button'); if (button) selectPanel(button.dataset.panel); });
   byId('avatar-file').addEventListener('change', e => { const file = e.target.files[0]; if (!file) return; if (file.size > 1024*1024 || !['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)) { message('请选择不超过 1 MB 的 PNG、JPG、WebP 或 GIF 图片。',true); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = () => { avatar = reader.result; preview(); }; reader.readAsDataURL(file); });
   byId('remove-avatar').addEventListener('click',() => { avatar = ''; byId('avatar-file').value = ''; preview(); });
-  profile.addEventListener('submit',async e => { e.preventDefault(); try { await save({kind:'profile',name:profile.elements.name.value,signature:profile.elements.signature.value,tags:tags(profile.elements.tags.value),title:profile.elements.title.value,description:profile.elements.description.value,avatar}); } catch(error) { message(error.message,true); } });
+  byId('cover-file').addEventListener('change', e => { const file=e.target.files[0]; if (!file) return; if(file.size>3*1024*1024 || !['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)){message('请选择不超过 3 MB 的 PNG、JPG、WebP 或 GIF 图片。',true);e.target.value='';return} const reader=new FileReader(); reader.onload=()=>{coverWallpaper=reader.result}; reader.readAsDataURL(file); });
+  byId('remove-cover').addEventListener('click',()=>{coverWallpaper='';byId('cover-file').value='';message('已选择默认壁纸，保存后生效。');});
+  profile.addEventListener('submit',async e => { e.preventDefault(); try { await save({kind:'profile',name:profile.elements.name.value,signature:profile.elements.signature.value,tags:tags(profile.elements.tags.value),title:profile.elements.title.value,description:profile.elements.description.value,coverQuote:profile.elements.coverQuote.value,coverAuthor:profile.elements.coverAuthor.value,coverWallpaper,avatar}); } catch(error) { message(error.message,true); } });
   posts.elements.selection.addEventListener('change',loadPost); moments.elements.selection.addEventListener('change',loadMoment); projects.elements.selection.addEventListener('change',loadProject);
   posts.addEventListener('submit',async e => { e.preventDefault(); try { const payload = {kind:'post'}; for (const key of ['slug','title','category','excerpt','body']) payload[key] = posts.elements[key].value; payload.tags = tags(posts.elements.tags.value); await save(payload); posts.elements.selection.value = payload.slug; loadPost(); } catch(error) { message(error.message,true); } });
   moments.addEventListener('submit',async e => { e.preventDefault(); try { const index = Number(moments.elements.selection.value); await save({kind:'moment',index,text:moments.elements.text.value,tags:tags(moments.elements.tags.value)}); moments.elements.selection.value = String(index < 0 ? 0 : index); loadMoment(); } catch(error) { message(error.message,true); } });

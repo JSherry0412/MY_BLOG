@@ -1,3 +1,7 @@
 # 个人内容只保存在本机；框架可以单独提交。
 blog-data.js
 blog-data.js.tmp
+
+# 用户自己的角色和图片素材不上传。
+/personal/
+/看板娘.png
