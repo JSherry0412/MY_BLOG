@@ -200,6 +200,40 @@
     if (Math.abs(delta) < 40 || !direction) return;
     scrollHomeSection(document.getElementById(direction === 'down' ? 'home-content' : 'cover'), direction);
   }, {passive:true});
+  // Decorative atmosphere never intercepts input or changes site content.
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  let atmosphere;
+  function updateAtmosphere() {
+    atmosphere?.remove();
+    atmosphere = null;
+    if (motionPreference.matches) return;
+    const weather = Math.random() < .5 ? 'rain' : 'snow';
+    atmosphere = document.createElement('div');
+    atmosphere.className = `atmosphere atmosphere--${weather}`;
+    atmosphere.setAttribute('aria-hidden', 'true');
+    const count = matchMedia('(max-width: 760px)').matches ? 12 : 20;
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('i');
+      particle.style.setProperty('--x', `${Math.random() * 100}%`);
+      particle.style.setProperty('--delay', `${-Math.random() * 14}s`);
+      particle.style.setProperty('--duration', `${weather === 'rain' ? 1.8 + Math.random() * 1.6 : 8 + Math.random() * 7}s`);
+      particle.style.setProperty('--drift', `${(Math.random() - .5) * 65}px`);
+      atmosphere.append(particle);
+    }
+    document.body.append(atmosphere);
+  }
+  updateAtmosphere();
+  motionPreference.addEventListener('change', updateAtmosphere);
+  document.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0 || motionPreference.matches) return;
+    const ripple = document.createElement('span');
+    ripple.className = 'click-spark';
+    ripple.setAttribute('aria-hidden', 'true');
+    ripple.style.left = `${event.clientX}px`;
+    ripple.style.top = `${event.clientY}px`;
+    document.body.append(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove(), {once:true});
+  });
   document.querySelector('#year').textContent = new Date().getFullYear(); document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY'; const githubLink = document.querySelector('.github'); githubLink.href = safeUrl(config.github) || '#about'; window.addEventListener('hashchange', () => {
     render();
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches && app.animate) {

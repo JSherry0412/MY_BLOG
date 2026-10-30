@@ -33,3 +33,16 @@ dialog{width:min(520px,calc(100% - 30px));border:1px solid white;border-radius:2
 :where(.button,.page-edit,.dialog-close,.filter-chip,.home-activity .contribution-year button):not(:disabled):hover{box-shadow:0 5px 16px #778b8230}
 :where(.button,.page-edit,.dialog-close,.filter-chip,.home-activity .contribution-year button,.scroll-down):not(:disabled):active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){:where(a,button),:where(.text-link span,.all-link span,.article-arrow,.scroll-down b){transition:none!important;animation:none!important}}
+
+/* Soft light and sparse weather keep the reading pages connected to the cover. */
+body:not(.home-active):before{background:radial-gradient(ellipse at 12% 12%,#dceae8 0,transparent 40%),radial-gradient(ellipse at 90% 26%,#eee5ef 0,transparent 38%),radial-gradient(ellipse at 56% 96%,#e6edf1 0,transparent 42%),linear-gradient(145deg,#f0f4f1,#faf8fa 58%,#e9eef2)}
+.chosen-home .home{background:radial-gradient(ellipse at 85% 12%,#e7daedb5,transparent 33%),radial-gradient(ellipse at 5% 44%,#d8e9eca8,transparent 34%),radial-gradient(ellipse at 90% 77%,#e6e1ee91,transparent 34%),linear-gradient(155deg,#fcfbfc,#f3f6f9 58%,#faf8fa)}
+.atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:10;contain:strict}
+.atmosphere i{position:absolute;display:block;top:-24px;left:var(--x);animation:weather-fall var(--duration) linear var(--delay) infinite;will-change:transform}
+.atmosphere--snow i{width:4px;height:4px;border-radius:50%;background:#a6b1c2;opacity:.38;box-shadow:0 0 6px #fff}
+.atmosphere--rain i{width:1px;height:13px;background:linear-gradient(transparent,#9baec4);opacity:.28}
+body.home-active .atmosphere i{filter:brightness(1.15)}
+@keyframes weather-fall{from{transform:translate3d(0,-20px,0)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0)}}
+.click-spark{position:fixed;z-index:20;pointer-events:none;width:20px;height:20px;margin:-10px 0 0 -10px;border:1px solid #a99cbc;border-radius:50%;box-shadow:0 0 10px #c8bcd5;animation:click-bloom .55s ease-out forwards}
+@keyframes click-bloom{from{opacity:.8;transform:scale(.25)}to{opacity:0;transform:scale(1.8)}}
+@media(prefers-reduced-motion:reduce){.atmosphere,.click-spark{display:none!important}}
