@@ -97,6 +97,7 @@ http.createServer((req,res) => {
     }
     if (req.method !== 'GET') return reply(res,405,'Method not allowed','text/plain; charset=utf-8');
     let file = files[pathname]; if (!file && /^\/posts\/[a-zA-Z0-9_-]+\.md$/.test(pathname)) file = pathname.slice(1);
+    if (!file && /^\/personal\/wallpapers\/wallpaper-[0-9]{2}\.png$/.test(pathname)) file = pathname.slice(1);
     if (!file) return reply(res,404,'Not found','text/plain; charset=utf-8');
     const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8','.png':'image/png'};
     if (!fs.existsSync(path.join(root,file))) return reply(res,404,'Not found','text/plain; charset=utf-8');

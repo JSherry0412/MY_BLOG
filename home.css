@@ -47,3 +47,12 @@ body.home-active .atmosphere i{filter:brightness(1.15)}
 .click-spark{position:fixed;z-index:20;pointer-events:none;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #957fb3;border-radius:50%;background:radial-gradient(circle,#f7edffcc 0 2px,transparent 4px);box-shadow:0 0 0 1px #ffffffa8,0 0 14px #b29ccc;animation:click-bloom .7s ease-out forwards}
 @keyframes click-bloom{0%{opacity:1;transform:scale(.35)}60%{opacity:.8}100%{opacity:0;transform:scale(1.8)}}
 @media(prefers-reduced-motion:reduce){.atmosphere,.click-spark{display:none!important}}
+
+/* Wallpaper ambience */
+.wallpaper-ambience{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.wallpaper-ambience>div{position:absolute;inset:-12%;background:center/cover no-repeat;filter:blur(65px);opacity:0;transition:opacity 3s ease}
+.wallpaper-ambience>div.visible{opacity:1}
+.wallpaper-ambience:after{content:'';position:absolute;inset:0;background:rgba(246,248,250,.48)}
+body.has-wallpaper-background .chosen-home{background:transparent}
+body.has-wallpaper-background .chosen-home .home{background:linear-gradient(155deg,#f8f8fb55,#f5f8fa50)}
+@media(prefers-reduced-motion:reduce){.wallpaper-ambience>div{transition:none}}

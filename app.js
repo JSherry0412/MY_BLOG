@@ -200,6 +200,30 @@
     if (Math.abs(delta) < 40 || !direction) return;
     scrollHomeSection(document.getElementById(direction === 'down' ? 'home-content' : 'cover'), direction);
   }, {passive:true});
+  // Personal wallpapers stay local; missing images leave the existing background intact.
+  function startWallpaperBackground() {
+    const images = Array.from({length:12}, (_, i) => `/personal/wallpapers/wallpaper-${String(i + 1).padStart(2, '0')}.png`);
+    let index = Math.floor(Math.random() * images.length), current = 0, failures = 0;
+    const layer = document.createElement('div');
+    layer.className = 'wallpaper-ambience'; layer.setAttribute('aria-hidden', 'true');
+    const panels = [document.createElement('div'), document.createElement('div')];
+    layer.append(...panels); document.body.prepend(layer);
+    function next() {
+      const url = images[index++ % images.length], image = new Image();
+      image.onload = () => {
+        failures = 0;
+        const target = panels[current];
+        target.style.backgroundImage = `url("${url}")`;
+        target.classList.add('visible'); panels[1-current].classList.remove('visible');
+        document.body.classList.add('has-wallpaper-background'); current = 1-current;
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setTimeout(next, 18000);
+      };
+      image.onerror = () => { if (++failures < images.length) next(); };
+      image.src = url;
+    }
+    next();
+  }
+  startWallpaperBackground();
   // Decorative atmosphere never intercepts input or changes site content.
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   let atmosphere;
