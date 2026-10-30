@@ -18,3 +18,18 @@ dialog{width:min(520px,calc(100% - 30px));border:1px solid white;border-radius:2
 @media(max-width:450px){@scope (.chosen-home){.intro h2{font-size:28px}}}
 .home-activity .contribution-summary{display:flex;flex-direction:column;align-items:flex-end;gap:5px}.home-activity .contribution-year{display:flex;align-items:center;gap:8px}.home-activity .contribution-year-label{font-size:12px;font-weight:600;color:#68778c;min-width:48px;text-align:center}.home-activity .contribution-year button{width:24px;height:24px;display:grid;place-items:center;border:1px solid #e0e5e8;border-radius:50%;background:#ffffffa8;color:#788a98;font-size:16px;line-height:1;cursor:pointer}.home-activity .contribution-year button:disabled{opacity:.35;cursor:default}.home-activity .contribution-year button:focus-visible{outline:2px solid #77789c;outline-offset:2px}.home-activity .contribution-placeholder{display:block;width:8px;height:8px}.home-activity .contribution-day.is-future{background:#f2f3f4;opacity:.75}@media(max-width:480px){.chosen-home .nav{top:65px;flex-wrap:wrap;row-gap:12px}.chosen-home .nav nav{order:3;width:100%;margin:0;justify-content:space-between;gap:8px}.home-activity .contribution-header{align-items:flex-start;gap:12px}}
 .home-activity .contribution-scroll-hint{display:none;margin:8px 0 0;font-size:10px;color:#a0aab5}@media(max-width:700px){.home-activity .contribution-scroll-hint{display:block}}
+
+/* Shared, restrained feedback across the cover and reading pages. */
+:where(a, button):focus-visible{outline:2px solid #8581a8;outline-offset:4px;border-radius:3px}
+.chosen-home .cover :where(a,button):focus-visible{outline-color:#fff}
+:where(.topbar nav a,.chosen-home .nav nav a){transition:color .2s ease,opacity .2s ease}
+.topbar nav a:hover{color:#617f70}
+:where(.text-link,.all-link,.article-arrow,.read-link,.back,.article-neighbors a,.little-note>a){transition:color .2s ease,opacity .2s ease}
+:where(.text-link,.all-link,.article-arrow,.read-link,.back,.article-neighbors a,.little-note>a):hover{color:#81749c}
+:where(.text-link span,.all-link span,.article-arrow,.scroll-down b){display:inline-block;transition:transform .2s ease}
+:where(.text-link,.all-link):hover span,.article-arrow:hover{transform:translate(3px,-2px)}
+.scroll-down:hover b{transform:translateY(4px)}
+:where(.button,.page-edit,.dialog-close,.filter-chip,.home-activity .contribution-year button){transition:background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .15s ease}
+:where(.button,.page-edit,.dialog-close,.filter-chip,.home-activity .contribution-year button):not(:disabled):hover{box-shadow:0 5px 16px #778b8230}
+:where(.button,.page-edit,.dialog-close,.filter-chip,.home-activity .contribution-year button,.scroll-down):not(:disabled):active{transform:scale(.97)}
+@media(prefers-reduced-motion:reduce){:where(a,button),:where(.text-link span,.all-link span,.article-arrow,.scroll-down b){transition:none!important;animation:none!important}}

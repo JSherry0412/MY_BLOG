@@ -200,5 +200,10 @@
     if (Math.abs(delta) < 40 || !direction) return;
     scrollHomeSection(document.getElementById(direction === 'down' ? 'home-content' : 'cover'), direction);
   }, {passive:true});
-  document.querySelector('#year').textContent = new Date().getFullYear(); document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY'; const githubLink = document.querySelector('.github'); githubLink.href = safeUrl(config.github) || '#about'; window.addEventListener('hashchange',render); render();
+  document.querySelector('#year').textContent = new Date().getFullYear(); document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY'; const githubLink = document.querySelector('.github'); githubLink.href = safeUrl(config.github) || '#about'; window.addEventListener('hashchange', () => {
+    render();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && app.animate) {
+      app.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}], {duration:320,easing:'cubic-bezier(.22,1,.36,1)'});
+    }
+  }); render();
 })();
