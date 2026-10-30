@@ -211,7 +211,7 @@
     atmosphere = document.createElement('div');
     atmosphere.className = `atmosphere atmosphere--${weather}`;
     atmosphere.setAttribute('aria-hidden', 'true');
-    const count = matchMedia('(max-width: 760px)').matches ? 12 : 20;
+    const count = matchMedia('(max-width: 760px)').matches ? 22 : 36;
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('i');
       particle.style.setProperty('--x', `${Math.random() * 100}%`);

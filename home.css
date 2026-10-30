@@ -39,10 +39,10 @@ body:not(.home-active):before{background:radial-gradient(ellipse at 12% 12%,#dce
 .chosen-home .home{background:radial-gradient(ellipse at 85% 12%,#e7daedb5,transparent 33%),radial-gradient(ellipse at 5% 44%,#d8e9eca8,transparent 34%),radial-gradient(ellipse at 90% 77%,#e6e1ee91,transparent 34%),linear-gradient(155deg,#fcfbfc,#f3f6f9 58%,#faf8fa)}
 .atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:10;contain:strict}
 .atmosphere i{position:absolute;display:block;top:-24px;left:var(--x);animation:weather-fall var(--duration) linear var(--delay) infinite;will-change:transform}
-.atmosphere--snow i{width:4px;height:4px;border-radius:50%;background:#a6b1c2;opacity:.38;box-shadow:0 0 6px #fff}
-.atmosphere--rain i{width:1px;height:13px;background:linear-gradient(transparent,#9baec4);opacity:.28}
+.atmosphere--snow i{width:6px;height:6px;border-radius:50%;background:#f5f7ff;opacity:.85;box-shadow:0 0 0 1px #8897ad88,0 0 7px #fff}
+.atmosphere--rain i{width:2px;height:22px;border-radius:2px;background:linear-gradient(transparent,#8295b2);opacity:.58;box-shadow:1px 0 2px #ffffff8c}
 body.home-active .atmosphere i{filter:brightness(1.15)}
 @keyframes weather-fall{from{transform:translate3d(0,-20px,0)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0)}}
-.click-spark{position:fixed;z-index:20;pointer-events:none;width:20px;height:20px;margin:-10px 0 0 -10px;border:1px solid #a99cbc;border-radius:50%;box-shadow:0 0 10px #c8bcd5;animation:click-bloom .55s ease-out forwards}
-@keyframes click-bloom{from{opacity:.8;transform:scale(.25)}to{opacity:0;transform:scale(1.8)}}
+.click-spark{position:fixed;z-index:20;pointer-events:none;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #957fb3;border-radius:50%;background:radial-gradient(circle,#f7edffcc 0 2px,transparent 4px);box-shadow:0 0 0 1px #ffffffa8,0 0 14px #b29ccc;animation:click-bloom .7s ease-out forwards}
+@keyframes click-bloom{0%{opacity:1;transform:scale(.35)}60%{opacity:.8}100%{opacity:0;transform:scale(1.8)}}
 @media(prefers-reduced-motion:reduce){.atmosphere,.click-spark{display:none!important}}
