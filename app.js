@@ -235,13 +235,13 @@
     atmosphere = document.createElement('div');
     atmosphere.className = `atmosphere atmosphere--${weather}`;
     atmosphere.setAttribute('aria-hidden', 'true');
-    const count = matchMedia('(max-width: 760px)').matches ? 22 : 36;
+    const count = matchMedia('(max-width: 760px)').matches ? (weather === 'rain' ? 30 : 22) : (weather === 'rain' ? 50 : 36);
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('i');
-      particle.style.setProperty('--x', `${Math.random() * 100}%`);
+      particle.style.setProperty('--x', `${Math.random() * (weather === 'rain' ? 122 : 100)}%`);
       particle.style.setProperty('--delay', `${-Math.random() * 14}s`);
       particle.style.setProperty('--duration', `${weather === 'rain' ? 1.8 + Math.random() * 1.6 : 8 + Math.random() * 7}s`);
-      particle.style.setProperty('--drift', `${(Math.random() - .5) * 65}px`);
+      particle.style.setProperty('--drift', `${weather === 'rain' ? -innerHeight * .22 : (Math.random() - .5) * 65}px`);
       particle.style.setProperty('--size', `${10 + Math.random() * 7}px`);
       atmosphere.append(particle);
     }

@@ -42,7 +42,7 @@ body:not(.home-active):before{background:radial-gradient(ellipse at 12% 12%,#cbd
 .atmosphere--snow i{width:var(--size);height:var(--size);color:#fff;opacity:.87;font:400 var(--size)/1 'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif;text-align:center;text-shadow:0 1px 3px #697b99,0 0 7px #e8f1ff;animation-name:snow-fall}.atmosphere--snow i:before{content:'❄︎'}
 .atmosphere--rain i{width:1px;height:27px;border-radius:2px;background:linear-gradient(transparent,#718ba9 65%,#d9e8f5);opacity:.68;box-shadow:1px 0 2px #ffffff9c}
 body.home-active .atmosphere i{filter:brightness(1.15)}
-@keyframes weather-fall{from{transform:translate3d(0,-20px,0) rotate(7deg)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0) rotate(7deg)}}
+@keyframes weather-fall{from{transform:translate3d(0,-20px,0) rotate(12deg)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0) rotate(12deg)}}
 @keyframes snow-fall{from{transform:translate3d(0,-20px,0) rotate(0deg)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0) rotate(120deg)}}
 .click-spark{position:fixed;z-index:20;pointer-events:none;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #957fb3;border-radius:50%;background:radial-gradient(circle,#f7edffcc 0 2px,transparent 4px);box-shadow:0 0 0 1px #ffffffa8,0 0 14px #b29ccc;animation:click-bloom .7s ease-out forwards}
 @keyframes click-bloom{0%{opacity:1;transform:scale(.35)}60%{opacity:.8}100%{opacity:0;transform:scale(1.8)}}
@@ -50,9 +50,17 @@ body.home-active .atmosphere i{filter:brightness(1.15)}
 
 /* Wallpaper ambience */
 .wallpaper-ambience{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-.wallpaper-ambience>div{position:absolute;inset:-12%;background:center/cover no-repeat;filter:blur(65px);opacity:0;transition:opacity 3s ease}
+.wallpaper-ambience>div{position:absolute;inset:-12%;background:center/cover no-repeat;filter:blur(24px);opacity:0;transition:opacity 3s ease}
 .wallpaper-ambience>div.visible{opacity:1}
-.wallpaper-ambience:after{content:'';position:absolute;inset:0;background:rgba(246,248,250,.48)}
+.wallpaper-ambience:after{content:'';position:absolute;inset:0;background:rgba(246,248,250,.62)}
 body.has-wallpaper-background .chosen-home{background:transparent}
 body.has-wallpaper-background .chosen-home .home{background:linear-gradient(155deg,#f8f8fb55,#f5f8fa50)}
 @media(prefers-reduced-motion:reduce){.wallpaper-ambience>div{transition:none}}
+
+/* Keep secondary text readable over both light and dark wallpapers. */
+body.has-wallpaper-background .topbar nav{color:#34464e}
+body.has-wallpaper-background .topbar nav a.active{color:#1f3138}
+body.has-wallpaper-background :is(.section-heading p,.post-meta,.post-card p,.card-bottom,.card-number,.result-count,.filter-row,.empty,.timeline-date,.moment-card p,.project-card p,.history-item>span,.history-item p,.about-card p,.article-toc button,.article-neighbors small,.comments-placeholder p,.footer){color:#4c5d64}
+body.has-wallpaper-background :is(.eyebrow,.card-tags,.category,.read-link,.all-posts,.filter-chip,.back){color:#435e54}
+body.has-wallpaper-background .filter-chip.selected{color:#fff}
+body.has-wallpaper-background .chosen-home :is(.intro-text>p,.article-list p,.article-date span,.article-meta,.article-tags,.section-overline,.small-label,.little-note p,.home-footer,.art-number){color:#4c596a}
