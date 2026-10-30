@@ -1,7 +1,7 @@
 (() => {
   const byId = id => document.getElementById(id);
   const profile = byId('profile-form'), posts = byId('post-form'), moments = byId('moment-form'), projects = byId('project-form'), about = byId('about-form');
-  const notice = byId('notice'); let data, avatar = '', coverWallpaper = '';
+  const notice = byId('notice'); let data, avatar = '', coverWallpaper = '', postCover = '', momentImages = [], uploading = false;
   const params = new URLSearchParams(location.search);
   if (params.get('embedded') === '1') document.body.classList.add('embedded');
   const message = (text,error=false) => { notice.textContent = text; notice.classList.toggle('error',error); };
@@ -16,8 +16,27 @@
     option(rs,'-1','＋ 新建项目'); data.projects.forEach((p,i) => option(rs,String(i),p.title));
     for (const [select,value] of [[ps,pv],[ms,mv],[rs,rv]]) if ([...select.options].some(o => o.value === value)) select.value = value;
   }
-  function loadPost() { const p = data.posts.find(item => item.slug === posts.elements.selection.value); for (const key of ['slug','title','category','excerpt','body']) posts.elements[key].value = p?.[key] || ''; posts.elements.tags.value = (p?.tags || []).join(', '); posts.elements.slug.readOnly = !!p; }
-  function loadMoment() { const m = data.moments[Number(moments.elements.selection.value)]; moments.elements.text.value = m?.text || ''; moments.elements.tags.value = (m?.tags || []).join(', '); }
+  function loadPost() { const p = data.posts.find(item => item.slug === posts.elements.selection.value); for (const key of ['slug','title','category','excerpt','body']) posts.elements[key].value = p?.[key] || ''; posts.elements.tags.value = (p?.tags || []).join(', '); posts.elements.slug.readOnly = !!p; postCover = p?.cover || ''; imagePreviews(); }
+  function loadMoment() { const m = data.moments[Number(moments.elements.selection.value)]; moments.elements.text.value = m?.text || ''; moments.elements.tags.value = (m?.tags || []).join(', '); momentImages = [...(m?.images || [])]; imagePreviews(); }
+  function imagePreviews() {
+    for (const [id, paths] of [['post-cover-preview', postCover ? [postCover] : []], ['moment-image-preview', momentImages]]) {
+      const root = byId(id); root.replaceChildren();
+      paths.forEach((path,index) => { const item = document.createElement('div'); item.className = 'image-preview'; const img = document.createElement('img'); img.src = path; img.alt = '图片预览'; const button = document.createElement('button'); button.type = 'button'; button.textContent = '移除'; button.setAttribute('aria-label', `移除图片 ${index + 1}`); button.addEventListener('click', () => { if (id === 'post-cover-preview') postCover = ''; else momentImages.splice(index,1); imagePreviews(); }); item.append(img,button); root.append(item); });
+    }
+  }
+  async function upload(file) {
+    if (!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type) || file.size > 10 * 1024 * 1024) throw new Error('请选择不超过 10 MB 的 PNG、JPG、WebP 或 GIF 图片');
+    const image = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('图片读取失败')); reader.readAsDataURL(file); });
+    const res = await fetch('/api/image',{method:'POST',headers:{'Content-Type':'application/json','X-Blog-Editor':'1'},body:JSON.stringify({image})}); const result = await res.json(); if (!res.ok) throw new Error(result.error || '图片上传失败'); return result.url;
+  }
+  async function uploadFiles(input, callback) {
+    if (uploading) return; uploading = true; const buttons = document.querySelectorAll('button[type=submit]'); buttons.forEach(button => button.disabled = true); message('正在添加图片…');
+    try { for (const file of input.files) await callback(await upload(file)); message('图片已添加，请保存内容。'); } catch(error) { message(error.message,true); } finally { input.value = ''; uploading = false; buttons.forEach(button => button.disabled = false); }
+  }
+  byId('post-cover-file').addEventListener('change', e => uploadFiles(e.target, async url => { postCover = url; imagePreviews(); }));
+  byId('remove-post-cover').addEventListener('click', () => { postCover = ''; imagePreviews(); });
+  byId('post-image-file').addEventListener('change', e => { const field = posts.elements.body; let position = field.selectionStart; uploadFiles(e.target, async url => { const value = `\n![文章图片](${url})\n`; field.setRangeText(value, position, position, 'end'); position += value.length; }); });
+  byId('moment-image-file').addEventListener('change', e => { if (momentImages.length + e.target.files.length > 9) { message('一条动态最多添加 9 张图片',true); e.target.value = ''; return; } uploadFiles(e.target, async url => { momentImages.push(url); imagePreviews(); }); });
   function loadProject() { const p = data.projects[Number(projects.elements.selection.value)]; for (const key of ['title','description','category','url']) projects.elements[key].value = p?.[key] || ''; }
   async function load() {
     const res = await fetch('/api/data'); if (!res.ok) throw new Error('无法读取博客数据'); data = await res.json();
@@ -37,8 +56,8 @@
   byId('remove-cover').addEventListener('click',()=>{coverWallpaper='';byId('cover-file').value='';message('已选择默认壁纸，保存后生效。');});
   profile.addEventListener('submit',async e => { e.preventDefault(); try { await save({kind:'profile',name:profile.elements.name.value,signature:profile.elements.signature.value,tags:tags(profile.elements.tags.value),title:profile.elements.title.value,description:profile.elements.description.value,coverQuote:profile.elements.coverQuote.value,coverAuthor:profile.elements.coverAuthor.value,coverWallpaper,avatar}); } catch(error) { message(error.message,true); } });
   posts.elements.selection.addEventListener('change',loadPost); moments.elements.selection.addEventListener('change',loadMoment); projects.elements.selection.addEventListener('change',loadProject);
-  posts.addEventListener('submit',async e => { e.preventDefault(); try { const payload = {kind:'post'}; for (const key of ['slug','title','category','excerpt','body']) payload[key] = posts.elements[key].value; payload.tags = tags(posts.elements.tags.value); await save(payload); posts.elements.selection.value = payload.slug; loadPost(); } catch(error) { message(error.message,true); } });
-  moments.addEventListener('submit',async e => { e.preventDefault(); try { const index = Number(moments.elements.selection.value); await save({kind:'moment',index,text:moments.elements.text.value,tags:tags(moments.elements.tags.value)}); moments.elements.selection.value = String(index < 0 ? 0 : index); loadMoment(); } catch(error) { message(error.message,true); } });
+  posts.addEventListener('submit',async e => { e.preventDefault(); try { const payload = {kind:'post'}; for (const key of ['slug','title','category','excerpt','body']) payload[key] = posts.elements[key].value; payload.tags = tags(posts.elements.tags.value); payload.cover = postCover; await save(payload); posts.elements.selection.value = payload.slug; loadPost(); } catch(error) { message(error.message,true); } });
+  moments.addEventListener('submit',async e => { e.preventDefault(); try { const index = Number(moments.elements.selection.value); await save({kind:'moment',index,text:moments.elements.text.value,tags:tags(moments.elements.tags.value),images:momentImages}); moments.elements.selection.value = String(index < 0 ? 0 : index); loadMoment(); } catch(error) { message(error.message,true); } });
   projects.addEventListener('submit',async e => { e.preventDefault(); try { const index = Number(projects.elements.selection.value), payload = {kind:'project',index}; for (const key of ['title','description','category','url']) payload[key] = projects.elements[key].value; await save(payload); projects.elements.selection.value = String(index < 0 ? 0 : index); loadProject(); } catch(error) { message(error.message,true); } });
   about.addEventListener('submit',async e => { e.preventDefault(); try { const timeline = about.elements.timeline.value.split('\n').filter(line => line.trim()).map(line => { const [date='',title='',...rest] = line.split('|'); return {date,title,text:rest.join('|')}; }); await save({kind:'about',about:about.elements.about.value,github:about.elements.github.value,interests:tags(about.elements.interests.value),timeline}); } catch(error) { message(error.message,true); } });
   load().then(() => { if (params.get('slug')) posts.elements.selection.value = params.get('slug'); loadPost(); loadMoment(); loadProject(); if (['profile','posts','moments','projects','about'].includes(params.get('panel'))) selectPanel(params.get('panel')); }).catch(error => message(error.message,true));

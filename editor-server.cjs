@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto = require('node:crypto');
 const root = __dirname;
 const port = 4173;
 const origin = `http://127.0.0.1:${port}`;
@@ -33,6 +34,7 @@ function fullData() {
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function text(value, max = 5000) { if (typeof value !== 'string' || value.length > max) throw new Error('输入内容无效或过长'); return value.trim(); }
 function list(value) { if (!Array.isArray(value) || value.length > 30) throw new Error('标签格式无效'); return value.map(v => text(v, 40)).filter(Boolean); }
+function imagePath(value) { if (typeof value !== 'string' || (value && !/^\/personal\/uploads\/[a-f0-9-]{36}\.(png|jpg|webp|gif)$/.test(value))) throw new Error('图片路径无效'); return value; }
 function postBody(post) {
   if (typeof post.body === 'string') return post.body;
   if (!/^posts\/[a-zA-Z0-9_-]+\.md$/.test(post.file || '')) throw new Error('文章路径无效');
@@ -44,6 +46,25 @@ http.createServer((req,res) => {
   try {
     const pathname = new URL(req.url,origin).pathname;
     if (req.method === 'GET' && pathname === '/api/data') { const data = fullData(); data.posts = data.posts.map(p => ({...p,body:postBody(p)})); return reply(res,200,data); }
+    if (req.method === 'POST' && pathname === '/api/image') {
+      if (req.headers.origin !== origin || req.headers['x-blog-editor'] !== '1' || !String(req.headers['content-type']).startsWith('application/json')) return reply(res,403,{error:'请求来源无效'});
+      let body = ''; req.setEncoding('utf8');
+      req.on('data', chunk => { body += chunk; if (body.length > 14500000) req.destroy(); });
+      req.on('end', () => { try {
+        const match = JSON.parse(body).image?.match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+        if (!match) throw new Error('请选择 PNG、JPG、WebP 或 GIF 图片');
+        const bytes = Buffer.from(match[2], 'base64');
+        if (!bytes.length || bytes.length > 10 * 1024 * 1024) throw new Error('图片不能超过 10 MB');
+        const signatures = {png: () => bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')), jpeg: () => bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255, gif: () => /^GIF8[79]a$/.test(bytes.subarray(0,6).toString('ascii')), webp: () => bytes.subarray(0,4).toString('ascii') === 'RIFF' && bytes.subarray(8,12).toString('ascii') === 'WEBP'};
+        if (!signatures[match[1]]()) throw new Error('图片文件内容与格式不符');
+        const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+        const name = `${crypto.randomUUID()}.${ext}`;
+        const dir = path.join(root, 'personal', 'uploads'); fs.mkdirSync(dir, {recursive:true});
+        fs.writeFileSync(path.join(dir,name),bytes,{flag:'wx'});
+        reply(res,200,{url:`/personal/uploads/${name}`});
+      } catch(error) { reply(res,400,{error:error.message}); } });
+      return;
+    }
     if (req.method === 'POST' && pathname === '/api/save') {
       if (req.headers.origin !== origin || req.headers['x-blog-editor'] !== '1' || !String(req.headers['content-type']).startsWith('application/json')) return reply(res,403,{error:'请求来源无效'});
       let body = ''; req.setEncoding('utf8');
@@ -63,15 +84,17 @@ http.createServer((req,res) => {
           const slug = text(payload.slug,80); if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('文章标识只能包含小写字母、数字和连字符');
           const title = text(payload.title,150), content = text(payload.body,200000); if (!title || !content) throw new Error('请填写标题和文章内容');
           const index = data.posts.findIndex(p => p.slug === slug), old = data.posts[index];
-          const next = {slug,title,date:old?.date || today(),category:text(payload.category,40) || '随笔',tags:list(payload.tags),excerpt:text(payload.excerpt,300),reading:old?.reading || '阅读文章',body:content};
-          const comparable = old && {slug:old.slug,title:old.title,date:old.date,category:old.category,tags:old.tags || [],excerpt:old.excerpt,reading:old.reading || '阅读文章',body:postBody(old).trim()};
+          const cover = imagePath(payload.cover || '');
+          const next = {slug,title,date:old?.date || today(),category:text(payload.category,40) || '随笔',tags:list(payload.tags),excerpt:text(payload.excerpt,300),reading:old?.reading || '阅读文章',body:content,cover};
+          const comparable = old && {slug:old.slug,title:old.title,date:old.date,category:old.category,tags:old.tags || [],excerpt:old.excerpt,reading:old.reading || '阅读文章',body:postBody(old).trim(),cover:old.cover || ''};
           if (JSON.stringify(next) !== JSON.stringify(comparable)) { if (index < 0) data.posts.unshift(next); else data.posts[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
         } else if (payload.kind === 'moment') {
           if (!Array.isArray(data.moments)) data.moments = initial.moments;
           const content = text(payload.text,5000); if (!content) throw new Error('请填写动态内容');
           const index = Number(payload.index); if (!Number.isInteger(index) || index < -1 || index >= data.moments.length) throw new Error('动态不存在');
-          const old = index < 0 ? null : data.moments[index]; const next = {date:old?.date || today(),text:content,tags:list(payload.tags)};
-          if (JSON.stringify(next) !== JSON.stringify(old)) { if (index < 0) data.moments.unshift(next); else data.moments[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
+          const old = index < 0 ? null : data.moments[index]; const images = payload.images || []; if (!Array.isArray(images) || images.length > 9) throw new Error('一条动态最多添加 9 张图片'); const next = {date:old?.date || today(),text:content,tags:list(payload.tags),images:images.map(imagePath)};
+          const comparable = old && {...old, images:old.images || []};
+          if (JSON.stringify(next) !== JSON.stringify(comparable)) { if (index < 0) data.moments.unshift(next); else data.moments[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
         } else if (payload.kind === 'home') {
           data.settings ||= {};
           data.settings.title = text(payload.title,120);
@@ -98,9 +121,10 @@ http.createServer((req,res) => {
     if (req.method !== 'GET') return reply(res,405,'Method not allowed','text/plain; charset=utf-8');
     let file = files[pathname]; if (!file && /^\/posts\/[a-zA-Z0-9_-]+\.md$/.test(pathname)) file = pathname.slice(1);
     if (!file && /^\/personal\/wallpapers\/wallpaper-[0-9]{2}\.png$/.test(pathname)) file = pathname.slice(1);
+    if (!file && /^\/personal\/uploads\/[a-f0-9-]{36}\.(png|jpg|webp|gif)$/.test(pathname)) file = pathname.slice(1);
     if (!file) return reply(res,404,'Not found','text/plain; charset=utf-8');
-    const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8','.png':'image/png'};
+    const ext = path.extname(file); const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.md':'text/plain; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.gif':'image/gif','.webp':'image/webp'};
     if (!fs.existsSync(path.join(root,file))) return reply(res,404,'Not found','text/plain; charset=utf-8');
-    reply(res,200,ext === '.png' ? fs.readFileSync(path.join(root,file)) : fs.readFileSync(path.join(root,file),'utf8'),types[ext] || 'text/plain; charset=utf-8');
+    reply(res,200,['.png','.jpg','.gif','.webp'].includes(ext) ? fs.readFileSync(path.join(root,file)) : fs.readFileSync(path.join(root,file),'utf8'),types[ext] || 'text/plain; charset=utf-8');
   } catch(error) { reply(res,500,{error:error.message}); }
 }).listen(port,'127.0.0.1',() => console.log(`博客编辑器：${origin}/editor\n博客预览：${origin}/`));

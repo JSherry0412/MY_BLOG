@@ -85,3 +85,8 @@ body.has-wallpaper-background .chosen-home :is(.intro-text>p,.article-list p,.ar
 .about-page .about-timeline h2{margin:14px 0}
 @media(max-width:760px){.about-page{padding-top:20px}.about-cover{height:180px}.about-content{padding-bottom:36px}.about-profile-avatar{width:88px;height:88px;margin-top:-44px}.about-title{padding:20px 0 24px}.about-introduction{padding-top:26px}}
 @media(prefers-reduced-motion:reduce){.chosen-home .profile-avatar-link{transition:none}}
+
+/* Content photography */
+.chosen-home .article-list article.has-cover{grid-template-columns:80px minmax(0,1fr) 140px;align-items:center;gap:20px}.chosen-home .article-cover{display:block;overflow:hidden;border-radius:10px;aspect-ratio:4/3;background:#e5e9ed}.chosen-home .article-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}.chosen-home .article-cover:hover img{transform:scale(1.04)}
+@media(max-width:600px){.chosen-home .article-list article.has-cover{grid-template-columns:minmax(0,1fr) 100px;gap:12px}.chosen-home .article-list article.has-cover .article-date{grid-column:1 / -1}.chosen-home .article-cover{aspect-ratio:4/3}}
+@media(prefers-reduced-motion:reduce){.chosen-home .article-cover img{transition:none}}

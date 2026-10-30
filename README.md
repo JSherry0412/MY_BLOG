@@ -25,3 +25,7 @@
 ## 框架开发
 
 `app.js` 和 `style.css` 管理前台页面；`editor.html`、`editor.js`、`editor.css` 和 `editor-server.cjs` 负责本地编辑。文章支持基础 Markdown（标题、段落、引用、列表、代码和链接等）。框架变更可以提交至 GitHub，提交前使用 `git status` 确认不包含个人数据。
+
+## 文章与动态图片
+
+在编辑器的文章面板中选择封面，选择正文图片会在正文光标处插入 Markdown 图片；在动态面板可添加最多 9 张图片。支持 PNG、JPG、WebP、GIF，单张最大 10 MB。图片选定后立即保存在本机 `personal/uploads/`，内容还需点击保存；移除图片不会自动删除文件。首页最近文章会显示所选封面。请同时备份 `blog-data.js` 和 `personal/`，它们不会自动提交到 GitHub。
