@@ -265,8 +265,9 @@
   });
   document.querySelector('#year').textContent = new Date().getFullYear(); document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY'; const githubLink = document.querySelector('.github'); githubLink.href = safeUrl(config.github) || '#about'; window.addEventListener('hashchange', () => {
     render();
+    if (app.getAnimations) app.getAnimations().forEach(animation => animation.cancel());
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches && app.animate) {
-      app.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}], {duration:320,easing:'cubic-bezier(.22,1,.36,1)'});
+      app.animate([{opacity:0,transform:'translateY(14px)',offset:0},{opacity:1,transform:'translateY(-3px)',offset:.68},{opacity:1,transform:'translateY(0)',offset:1}], {duration:560,easing:'ease-out'});
     }
   }); render();
 })();

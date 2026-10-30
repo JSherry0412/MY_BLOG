@@ -50,7 +50,7 @@ body.home-active .atmosphere i{filter:brightness(1.15)}
 
 /* Wallpaper ambience */
 .wallpaper-ambience{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-.wallpaper-ambience>div{position:absolute;inset:-12%;background:center/cover no-repeat;filter:blur(24px);opacity:0;transition:opacity 3s ease}
+.wallpaper-ambience>div{position:absolute;inset:-12%;background:center/cover no-repeat;filter:blur(21px);opacity:0;transition:opacity 3s ease}
 .wallpaper-ambience>div.visible{opacity:1}
 .wallpaper-ambience:after{content:'';position:absolute;inset:0;background:rgba(246,248,250,.62)}
 body.has-wallpaper-background .chosen-home{background:transparent}
