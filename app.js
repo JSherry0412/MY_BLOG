@@ -218,6 +218,7 @@
       particle.style.setProperty('--delay', `${-Math.random() * 14}s`);
       particle.style.setProperty('--duration', `${weather === 'rain' ? 1.8 + Math.random() * 1.6 : 8 + Math.random() * 7}s`);
       particle.style.setProperty('--drift', `${(Math.random() - .5) * 65}px`);
+      particle.style.setProperty('--size', `${10 + Math.random() * 7}px`);
       atmosphere.append(particle);
     }
     document.body.append(atmosphere);

@@ -35,14 +35,15 @@ dialog{width:min(520px,calc(100% - 30px));border:1px solid white;border-radius:2
 @media(prefers-reduced-motion:reduce){:where(a,button),:where(.text-link span,.all-link span,.article-arrow,.scroll-down b){transition:none!important;animation:none!important}}
 
 /* Soft light and sparse weather keep the reading pages connected to the cover. */
-body:not(.home-active):before{background:radial-gradient(ellipse at 12% 12%,#dceae8 0,transparent 40%),radial-gradient(ellipse at 90% 26%,#eee5ef 0,transparent 38%),radial-gradient(ellipse at 56% 96%,#e6edf1 0,transparent 42%),linear-gradient(145deg,#f0f4f1,#faf8fa 58%,#e9eef2)}
-.chosen-home .home{background:radial-gradient(ellipse at 85% 12%,#e7daedb5,transparent 33%),radial-gradient(ellipse at 5% 44%,#d8e9eca8,transparent 34%),radial-gradient(ellipse at 90% 77%,#e6e1ee91,transparent 34%),linear-gradient(155deg,#fcfbfc,#f3f6f9 58%,#faf8fa)}
+body:not(.home-active):before{background:radial-gradient(ellipse at 12% 12%,#cbdedc 0,transparent 44%),radial-gradient(ellipse at 90% 26%,#ded2e5 0,transparent 45%),radial-gradient(ellipse at 56% 96%,#d3e2eb 0,transparent 48%),linear-gradient(145deg,#e2eceb,#ede9f0 55%,#dce8ef)}
+.chosen-home .home{background:radial-gradient(ellipse at 85% 12%,#d9cbe3bc,transparent 39%),radial-gradient(ellipse at 5% 44%,#cfe3e6bd,transparent 40%),radial-gradient(ellipse at 90% 77%,#d9d3e4a8,transparent 40%),linear-gradient(155deg,#eef1f3,#e4ebf0 58%,#efebf1)}
 .atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:10;contain:strict}
 .atmosphere i{position:absolute;display:block;top:-24px;left:var(--x);animation:weather-fall var(--duration) linear var(--delay) infinite;will-change:transform}
-.atmosphere--snow i{width:6px;height:6px;border-radius:50%;background:#f5f7ff;opacity:.85;box-shadow:0 0 0 1px #8897ad88,0 0 7px #fff}
-.atmosphere--rain i{width:2px;height:22px;border-radius:2px;background:linear-gradient(transparent,#8295b2);opacity:.58;box-shadow:1px 0 2px #ffffff8c}
+.atmosphere--snow i{width:var(--size);height:var(--size);color:#fff;opacity:.87;font:400 var(--size)/1 'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif;text-align:center;text-shadow:0 1px 3px #697b99,0 0 7px #e8f1ff;animation-name:snow-fall}.atmosphere--snow i:before{content:'❄︎'}
+.atmosphere--rain i{width:1px;height:27px;border-radius:2px;background:linear-gradient(transparent,#718ba9 65%,#d9e8f5);opacity:.68;box-shadow:1px 0 2px #ffffff9c}
 body.home-active .atmosphere i{filter:brightness(1.15)}
-@keyframes weather-fall{from{transform:translate3d(0,-20px,0)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0)}}
+@keyframes weather-fall{from{transform:translate3d(0,-20px,0) rotate(7deg)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0) rotate(7deg)}}
+@keyframes snow-fall{from{transform:translate3d(0,-20px,0) rotate(0deg)}to{transform:translate3d(var(--drift),calc(100vh + 45px),0) rotate(120deg)}}
 .click-spark{position:fixed;z-index:20;pointer-events:none;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #957fb3;border-radius:50%;background:radial-gradient(circle,#f7edffcc 0 2px,transparent 4px);box-shadow:0 0 0 1px #ffffffa8,0 0 14px #b29ccc;animation:click-bloom .7s ease-out forwards}
 @keyframes click-bloom{0%{opacity:1;transform:scale(.35)}60%{opacity:.8}100%{opacity:0;transform:scale(1.8)}}
 @media(prefers-reduced-motion:reduce){.atmosphere,.click-spark{display:none!important}}
