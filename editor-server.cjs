@@ -28,6 +28,7 @@ function fullData() {
   if (!Array.isArray(data.posts)) data.posts = initial.posts;
   if (!Array.isArray(data.moments)) data.moments = initial.moments;
   if (!Array.isArray(data.projects)) data.projects = initial.projects;
+  if (!Array.isArray(data.albums)) data.albums = [];
   data.settings = {...Object.fromEntries(['title','description','about','interests','timeline','github'].map(key => [key,initial[key]])), ...(data.settings || {})};
   return data;
 }
@@ -95,6 +96,17 @@ http.createServer((req,res) => {
           const old = index < 0 ? null : data.moments[index]; const images = payload.images || []; if (!Array.isArray(images) || images.length > 9) throw new Error('一条动态最多添加 9 张图片'); const next = {date:old?.date || today(),text:content,tags:list(payload.tags),images:images.map(imagePath)};
           const comparable = old && {...old, images:old.images || []};
           if (JSON.stringify(next) !== JSON.stringify(comparable)) { if (index < 0) data.moments.unshift(next); else data.moments[index] = next; data.activity[today()] = (data.activity[today()] || 0) + 1; }
+        } else if (payload.kind === 'album') {
+          if (!Array.isArray(data.albums)) data.albums = [];
+          const index = Number(payload.index);
+          if (!Number.isInteger(index) || index < -1 || index >= data.albums.length) throw new Error('相册不存在');
+          const title = text(payload.title,120), description = text(payload.description || '',500), images = payload.images;
+          if (!title) throw new Error('请填写相册名称');
+          if (!Array.isArray(images) || images.length < 1 || images.length > 50) throw new Error('相册需要 1 至 50 张照片');
+          const checked = images.map(imagePath); if (checked.some(x => !x)) throw new Error('照片路径无效');
+          const old = index < 0 ? null : data.albums[index];
+          const next = {title,description,date:old?.date || today(),images:checked};
+          if (index < 0) data.albums.unshift(next); else data.albums[index] = next;
         } else if (payload.kind === 'home') {
           data.settings ||= {};
           data.settings.title = text(payload.title,120);
@@ -108,6 +120,7 @@ http.createServer((req,res) => {
           data.settings.timeline = payload.timeline.map(row => ({date:text(row.date,80),title:text(row.title,150),text:text(row.text,1000)}));
         } else if (payload.kind === 'project') {
           if (!Array.isArray(data.projects)) data.projects = initial.projects;
+  if (!Array.isArray(data.albums)) data.albums = [];
           const index = Number(payload.index); if (!Number.isInteger(index) || index < -1 || index >= data.projects.length) throw new Error('项目不存在');
           const title = text(payload.title,150), url = text(payload.url,1000); if (!title) throw new Error('请填写项目名称');
           if (url && !/^https?:\/\//i.test(url)) throw new Error('链接须以 http:// 或 https:// 开头');
