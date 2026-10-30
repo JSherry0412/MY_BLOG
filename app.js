@@ -171,7 +171,7 @@
       app.querySelector('.article-neighbors').innerHTML = neighbors.map((p,i) => p ? `<a href="#post/${encodeURIComponent(p.slug)}"><small>${i ? '下一篇 →' : '← 上一篇'}</small><strong>${esc(p.title)}</strong></a>` : '<span></span>').join('');
     } catch { const body = app.querySelector('.article-body'); if (body && location.hash === `#post/${encodeURIComponent(slug)}`) body.textContent = '文章加载失败。请通过本地服务器打开网站，并检查文章文件是否存在。'; }
   }
-  function render() { const route = location.hash.slice(1) || 'home'; const section = route.startsWith('post/') ? 'posts' : route.startsWith('album/') ? 'albums' : route; document.body.classList.toggle('home-active',route === 'home'); document.querySelectorAll('[data-nav]').forEach(a => { const active = a.dataset.nav === section; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); if (route === 'home') home(); else if (route === 'posts') postsPage(); else if (route === 'moments') momentsPage(); else if (route === 'albums') albumsPage(); else if (/^album\/\d+$/.test(route)) albumPage(Number(route.slice(6))); else if (route === 'projects') projectsPage(); else if (route === 'about') about(); else if (route.startsWith('post/')) { try { postPage(decodeURIComponent(route.slice(5))); } catch { postsPage(); } } else home(); addEditButton(section, route); window.scrollTo(0,0); }
+  function render(preserveScroll = false) { const route = location.hash.slice(1) || 'home'; const section = route.startsWith('post/') ? 'posts' : route.startsWith('album/') ? 'albums' : route; document.body.classList.toggle('home-active',route === 'home'); document.querySelectorAll('[data-nav]').forEach(a => { const active = a.dataset.nav === section; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); if (route === 'home') home(); else if (route === 'posts') postsPage(); else if (route === 'moments') momentsPage(); else if (route === 'albums') albumsPage(); else if (/^album\/\d+$/.test(route)) albumPage(Number(route.slice(6))); else if (route === 'projects') projectsPage(); else if (route === 'about') about(); else if (route.startsWith('post/')) { try { postPage(decodeURIComponent(route.slice(5))); } catch { postsPage(); } } else home(); addEditButton(section, route); if (!preserveScroll) window.scrollTo(0,0); }
   function addEditButton(section, route) {
     if (location.hostname !== '127.0.0.1' || location.port !== '4173') return;
     const panel = ({home:'profile',posts:'posts',moments:'moments',albums:'albums',projects:'projects',about:'about'})[section];
@@ -183,8 +183,23 @@
       const frame = document.createElement('iframe'); frame.title = '编辑此页面';
       const slug = route.startsWith('post/') ? `&slug=${encodeURIComponent(decodeURIComponent(route.slice(5)))}` : '';
       frame.src = `/editor?panel=${panel}${slug}&embedded=1`;
+      let saved = false;
+      const onMessage = event => { if (event.origin === location.origin && event.source === frame.contentWindow && event.data?.type === 'blog-editor-saved') saved = true; };
+      window.addEventListener('message', onMessage);
       close.addEventListener('click', () => dialog.close());
-      dialog.addEventListener('close', () => { dialog.remove(); location.reload(); });
+      dialog.addEventListener('close', async () => {
+        window.removeEventListener('message', onMessage); dialog.remove();
+        if (!saved) return;
+        try {
+          const res = await fetch('/api/data', {cache:'no-store'}); if (!res.ok) throw new Error('读取失败');
+          const latest = await res.json(); Object.assign(data, latest);
+          for (const key of ['posts','moments','projects']) if (Array.isArray(data[key])) config[key] = data[key];
+          for (const key of ['title','description','about','interests','timeline','github']) if (data.settings && Object.hasOwn(data.settings,key)) config[key] = data.settings[key];
+          document.querySelector('#brand-name').textContent = data.profile?.name || 'SHERRY';
+          document.querySelector('.github').href = safeUrl(config.github) || '#about';
+          const y = window.scrollY; render(true); window.scrollTo({top:y,behavior:'instant'});
+        } catch { alert('内容已保存，但页面更新失败，请手动刷新查看。'); }
+      });
       dialog.append(close, frame); document.body.append(dialog); dialog.showModal();
     });
     app.prepend(button);
@@ -258,6 +273,9 @@
     next();
   }
   startWallpaperBackground();
+  const fireflies = document.createElement('div'); fireflies.className = 'night-fireflies'; fireflies.setAttribute('aria-hidden','true');
+  for (let i=0; i<24; i++) { const spark = document.createElement('i'); spark.style.left = `${(i * 47 + 7) % 97}%`; spark.style.top = `${(i * 67 + 11) % 94}%`; spark.style.setProperty('--spark-delay', `${-(i % 9)}s`); spark.style.setProperty('--spark-duration', `${5 + i % 5}s`); fireflies.append(spark); }
+  document.body.append(fireflies);
   // Decorative atmosphere never intercepts input or changes site content.
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   let atmosphere;
