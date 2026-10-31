@@ -28,14 +28,11 @@
     }
     const figure = document.createElement('figure');
     figure.className = 'page-quote';
-    const label = document.createElement('span');
-    label.className = 'page-quote-label';
-    label.textContent = 'A LITTLE LINE FOR YOU';
     const quote = document.createElement('blockquote');
     quote.textContent = currentQuote[0];
     const author = document.createElement('figcaption');
     author.textContent = `— ${currentQuote[1]}`;
-    figure.append(label, quote, author);
+    figure.append(quote, author);
     app.prepend(figure);
   }
 
