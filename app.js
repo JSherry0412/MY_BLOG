@@ -33,7 +33,7 @@
     const author = document.createElement('figcaption');
     author.textContent = `— ${currentQuote[1]}`;
     figure.append(quote, author);
-    app.prepend(figure);
+    app.append(figure);
   }
 
   const cards = posts => posts.map(post => `<div class="post-timeline-item"><a class="post-timeline-card glass" href="#post/${encodeURIComponent(post.slug)}">${imageUrl(post.cover) ? `<div class="post-timeline-cover"><img src="${imageUrl(post.cover)}" alt="" loading="lazy"></div>` : ''}<div class="post-timeline-copy"><div class="post-meta"><span class="category">${esc(post.category)}</span><span>${date(post.date)}</span></div><h3>${esc(post.title)}</h3><p>${esc(post.excerpt)}</p><div class="card-tags">${tags(post).map(t => `<span># ${esc(t)}</span>`).join('')}</div><div class="card-bottom"><span>${esc(post.reading)}</span><span class="read-link">阅读文章 ↗</span></div></div></a></div>`).join('');
